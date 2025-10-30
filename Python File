@@ -1,0 +1,171 @@
+import pygame
+import time
+
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
+MAZE_ROWS = 15
+MAZE_COLS = 25
+TILE_SIZE = 32
+
+WALL = '#'
+PATH = ' '
+PLAYER = 'P'
+EXIT = 'E'
+COIN = 'C'
+KEY = 'K'
+DOOR = 'D'
+
+COLOR_WALL = (64, 64, 64)
+COLOR_PATH = (200, 200, 200)
+COLOR_PLAYER = (0, 100, 255)
+COLOR_EXIT = (0, 255, 0)
+COLOR_COIN = (255, 215, 0)
+COLOR_KEY = (255, 100, 100)
+COLOR_DOOR = (139, 69, 19)
+COLOR_BG = (20, 20, 20)
+
+class GameState:
+    def __init__(self):
+        self.window = None
+        self.font = None
+        self.maze = []
+        self.player_pos = (0, 0)
+        self.running = True
+        self.coins_collected = 0
+        self.has_key = False
+        self.moves = 0
+        self.total_coins = 0
+        self.start_time = 0
+        self.end_time = 0
+        self.won = False
+
+def init_maze(game):
+    maze_data = [
+        "#########################",
+        "#P      #     C    #   C#",
+        "#  #### # ####### # ### #",
+        "# #   # #   #   # #   # #",
+        "#   # # ### # # # ### # #",
+        "#C# #C#     # # #     # #",
+        "### ### ##### # ##### # #",
+        "#     #       #       # #",
+        "# ### ####### ####### # #",
+        "# #C        #       # #C#",
+        "# ######### # ##### ### #",
+        "#         # # #   #     #",
+        "######### # # # # ##### #",
+        "#K      C   #   #D    CE#",
+        "#########################"
+    ]
+    game.maze = [list(row) for row in maze_data]
+
+    for y, row in enumerate(game.maze):
+        for x, cell in enumerate(row):
+            if cell == PLAYER:
+                game.player_pos = (x, y)
+                game.maze[y][x] = PATH
+            elif cell == COIN:
+                game.total_coins += 1
+
+def init_game():
+    pygame.init()
+    game = GameState()
+    game.window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+    pygame.display.set_caption("Maze Adventure")
+    game.font = pygame.font.SysFont("Arial", 24)
+    init_maze(game)
+    game.start_time = time.time()
+    return game
+
+def draw_maze(game):
+    screen = game.window
+    screen.fill(COLOR_BG)
+    for y in range(MAZE_ROWS):
+        for x in range(MAZE_COLS):
+            rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+            tile = game.maze[y][x]
+            if tile == WALL:
+                color = COLOR_WALL
+            elif tile == COIN:
+                color = COLOR_COIN
+            elif tile == KEY:
+                color = COLOR_KEY
+            elif tile == DOOR:
+                color = COLOR_DOOR
+            elif tile == EXIT:
+                color = COLOR_EXIT
+            else:
+                color = COLOR_PATH
+            pygame.draw.rect(screen, color, rect)
+
+    px, py = game.player_pos
+    player_rect = pygame.Rect(px * TILE_SIZE, py * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+    pygame.draw.rect(screen, COLOR_PLAYER, player_rect)
+
+    text_moves = game.font.render(f"Moves: {game.moves}", True, (255, 255, 255))
+    text_coins = game.font.render(f"Coins: {game.coins_collected}/{game.total_coins}", True, (255, 255, 255))
+    screen.blit(text_moves, (10, 10))
+    screen.blit(text_coins, (10, 40))
+    pygame.display.flip()
+
+def move_player(game, dx, dy):
+    x, y = game.player_pos
+    nx, ny = x + dx, y + dy
+
+    if 0 <= nx < MAZE_COLS and 0 <= ny < MAZE_ROWS:
+        tile = game.maze[ny][nx]
+        if tile == WALL:
+            return
+        if tile == COIN:
+            game.coins_collected += 1
+            game.maze[ny][nx] = PATH
+        if tile == KEY:
+            game.has_key = True
+            game.maze[ny][nx] = PATH
+        if tile == DOOR:
+            if game.has_key:
+                game.maze[ny][nx] = PATH
+            else:
+                return
+        if tile == EXIT:
+            if game.coins_collected == game.total_coins and game.has_key:
+                game.end_time = time.time()
+                game.won = True
+                game.running = False
+                return
+            else:
+                return
+        game.player_pos = (nx, ny)
+        game.moves += 1
+
+def handle_input(game):
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            game.running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP:
+                move_player(game, 0, -1)
+            elif event.key == pygame.K_DOWN:
+                move_player(game, 0, 1)
+            elif event.key == pygame.K_LEFT:
+                move_player(game, -1, 0)
+            elif event.key == pygame.K_RIGHT:
+                move_player(game, 1, 0)
+
+def main():
+    game = init_game()
+    clock = pygame.time.Clock()
+
+    while game.running:
+        handle_input(game)
+        draw_maze(game)
+        clock.tick(10)  # Tile-based frame rate
+
+    pygame.quit()
+    print(f"Moves: {game.moves}")
+    print(f"Coins: {game.coins_collected}/{game.total_coins}")
+    if game.won:
+        print(f"Time: {game.end_time - game.start_time:.2f} seconds")
+
+if __name__ == "__main__":
+    main()
