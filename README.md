@@ -10,8 +10,7 @@ A classic 2D tile-based maze exploration game built with Python and Pygame. Navi
 
 4. Performance Stats: Tracks your total moves and time taken to complete the maze.
 
-# 🎮 How to Play
-# Controls
+# 🎮 How to Play : Controls
 1. Arrow Keys: Move the player (Blue Square) Up, Down, Left, or Right.
 
 2. Close Window: Exit the game.
